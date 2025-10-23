@@ -12,7 +12,7 @@ struct ShuttleXpress {
     pub button4: Option<Key>,
     pub button5: Option<Key>,
     pub wheel: Option<(Key, Key)>,
-    pub spring_wheel: Option<Key>,
+    // pub spring_wheel: Option<Key>,
 }
 
 impl ShuttleXpress {
@@ -35,39 +35,34 @@ impl ShuttleXpress {
             button4: None,
             button5: None,
             wheel: Some((Key::VolumeDown, Key::VolumeUp)),
-            spring_wheel: None,
+            // spring_wheel: None,
         }
     }
 
-    // fn from_buffer(&mut self, &buffer: &[u8]) -> ShuttleXpressControl {
-    //     return Self::None;
-    // }
-
     pub fn get_key(&mut self) -> Option<Key> {
         let mut buffer = [0x0; 8];
-        if let Ok(n) = self.device.read(&mut buffer) {
-            println!("{:?}", &buffer[..n]);
+        if let Ok(_n) = self.device.read(&mut buffer) {
             if buffer[0] != 0 {
             } else if buffer[1] != 0 && self.previous_wheel != buffer[1] {
                 let previous_value = self.previous_wheel;
                 self.previous_wheel = buffer[1];
                 if let Some(keys) = self.wheel {
-                    if buffer[1] > previous_value {
+                    if buffer[1] < previous_value {
                         return Some(keys.0);
                     } else {
                         return Some(keys.1);
                     }
                 }
             } else if buffer[3] == 16 {
-                // return Self::Button1;
+                return self.button1;
             } else if buffer[3] == 32 {
-                // return Self::Button2;
+                return self.button2;
             } else if buffer[3] == 64 {
-                // return Self::Button3;
+                return self.button3;
             } else if buffer[3] == 128 {
-                // return Self::Button4;
+                return self.button4;
             } else if buffer[4] == 1 {
-                // return Self::Button5;
+                return self.button5;
             }
         }
         return None;
@@ -80,9 +75,8 @@ fn main() {
 
     loop {
         if let Some(key) = shuttle_xpress.get_key() {
-            match enigo.key(key, enigo::Direction::Click) {
-                Ok(_) => println!("Volume"),
-                Err(e) => println!("{}", e.to_string()),
+            if let Err(e) = enigo.key(key, enigo::Direction::Click) {
+                println!("ERROR: {}", e.to_string());
             }
         }
     }
